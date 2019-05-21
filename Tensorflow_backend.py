@@ -12,16 +12,16 @@ class NN:
     def create_network(self,isTraining=True):
         #channels first
         self.inputs = tf.placeholder(dtype = tf.float32,shape=[self.batchsize,self.channelsize,self.width,self.height])
-        net = tf.layers.conv2d(self.inputs,128,3,padding='same',activation=tf.nn.relu,data_format='channels_first')
-        net = tf.layers.conv2d(net,128,5,strides=(5,5),padding='same',activation=tf.nn.relu,data_format='channels_first')
-        net = tf.layers.conv2d(net,128,3,padding='same',activation=tf.nn.relu,data_format='channels_first')
-        net = tf.layers.conv2d(net,128,5,strides=(5,5),padding='same',activation=tf.nn.relu,data_format='channels_first')
-        net = tf.layers.conv2d(net,128,3,padding='same',activation=tf.nn.relu,data_format='channels_first')
+        net = tf.layers.conv2d(self.inputs,32,3,padding='same',activation=tf.nn.relu,data_format='channels_first')
+        net = tf.layers.conv2d(net,32,5,strides=(5,5),padding='same',activation=tf.nn.relu,data_format='channels_first')
+        net = tf.layers.conv2d(net,32,3,padding='same',activation=tf.nn.relu,data_format='channels_first')
+        net = tf.layers.conv2d(net,32,5,strides=(5,5),padding='same',activation=tf.nn.relu,data_format='channels_first')
+        net = tf.layers.conv2d(net,32,3,padding='same',activation=tf.nn.relu,data_format='channels_first')
         net = tf.reshape(net,shape=[self.batchsize,-1])
-        net = tf.layers.dense(net,1000,activation=tf.nn.relu)
-        net_1= tf.layers.dense(net,128,activation=tf.nn.relu) 
+        net = tf.layers.dense(net,32,activation=tf.nn.relu)
+        net_1= tf.layers.dense(net,32,activation=tf.nn.relu) 
         net_1= tf.layers.dense(net_1,4,activation=tf.nn.relu) #up,down,left,right
-        net_2= tf.layers.dense(net,128,activation=tf.nn.relu) 
+        net_2= tf.layers.dense(net,32,activation=tf.nn.relu) 
         net_2= tf.layers.dense(net_2,2,activation=tf.nn.relu) #press/release
         act1 = tf.nn.softmax(net_1)
         act2 = tf.nn.softmax(net_2)
