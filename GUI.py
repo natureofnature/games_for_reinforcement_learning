@@ -51,81 +51,108 @@ class enemy:
         t_fetcher.start()
 
 
+class player_agent:
+    def __init__(self,screen,env_w,env_h):
+        self.screen = screen
+        self.width,self.height = env_w,env_h 
+        self.obj_w, self.obj_h = (100,50)
+        self.obj_speed=1
+        img = Image.open("pictures/car.png").convert("RGBA").resize((self.obj_w,self.obj_h))
+        mode = img.mode
+        size = img.size
+        data=img.tobytes()
+        self.obj= pygame.image.fromstring(data,size,mode)
+        self.keys = [False, False, False, False]
+        self.playerpos=[int(self.width/2),int(self.height/2)]
+
+    def run_single(self,rect):
+        self.screen.blit(self.obj,(self.playerpos[0],self.playerpos[1]))
+        rect[0] = self.playerpos[1]
+        rect[1] = self.playerpos[0]
+        rect[2] = self.playerpos[1]+self.obj_h
+        rect[3] = self.playerpos[0]+self.obj_w
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit(0)
+            if event.type == pygame.KEYDOWN:
+                if event.key==K_w:
+                    self.keys[0]=True
+                elif event.key==K_a:
+                    self.keys[1]=True
+                elif event.key==K_s:
+                    self.keys[2]=True
+                elif event.key==K_d:
+                    self.keys[3]=True
+            if event.type == pygame.KEYUP:
+                if event.key==pygame.K_w:
+                    self.keys[0]=False
+                elif event.key==pygame.K_a:
+                    self.keys[1]=False
+                elif event.key==pygame.K_s:
+                    self.keys[2]=False
+                elif event.key==pygame.K_d:
+                    self.keys[3]=False
+        if self.keys[0]:
+            self.playerpos[1] = max(0,self.playerpos[1]-self.obj_speed) 
+        elif self.keys[2]:
+            self.playerpos[1] = min(self.height-self.obj_h,self.playerpos[1]+self.obj_speed)
+        if self.keys[1]:
+            self.playerpos[0] = max(0,self.playerpos[0]-self.obj_speed)
+        elif self.keys[3]:
+            self.playerpos[0] = min(self.width-self.obj_w,self.playerpos[0]+self.obj_speed)
+             
+
+class Policy:
+    def __init__(self,screen,width,height):
+        self.screen = screen
+        self.width,self.height = width,height
+    def capture(self):
+        counter = 0
+        while True:
+            if counter % 5 == 0:
+                image_string = pygame.image.tostring(self.screen,"RGB")
+                pil_obj = Image.frombytes("RGB",(self.width,self.height),image_string)
+                pil_obj.save(os.path.join("/dev/shm/1",str(counter)+".jpg"))
+                counter = counter + 1
+            counter = counter + 1
+            #time.sleep(0.02)
+
+    def run(self):
+        t_fetcher = threading.Thread(target=self.capture) 
+        t_fetcher.daemon = True 
+        t_fetcher.start()
+
+
 
 
 class GUI_engine:
     def __init__(self,width,height):
         self.width,self.height = width,height
-        self.obj_w, self.obj_h = (100,50)
-        self.obj_speed=1
         screen = pygame.display.set_mode((width,height))
-        img = Image.open("pictures/car.png").convert("RGBA").resize((self.obj_w,self.obj_h))
-        mode = img.mode
-        size = img.size
-        data=img.tobytes()
-        player = pygame.image.fromstring(data,size,mode)
-        keys = [False, False, False, False]
-        playerpos=[500,500]
         counter = 0
         enemy_lists = []
-        for i in range(5):
+        for i in range(8):
             ene = enemy(width,height,screen)
             enemy_lists.append(ene)
+        player = player_agent(screen,width,height)
+        rect = [0,0,0,0]
+        pol = Policy(screen,width,height)
+        pol.run()
 
         while 1:
             screen.fill(0)
-            screen.blit(player,(playerpos[0],playerpos[1]))
-            rect = (playerpos[1],playerpos[0],playerpos[1]+self.obj_h,playerpos[0]+self.obj_w) 
+            player.run_single(rect)
             for i in range(len(enemy_lists)):
                 enemy_lists[i].run_single(rect)
-
             pygame.display.flip()
-            if counter % 5 == 0:
-                #pygame.image.save(screen, os.path.join("/dev/shm/1/",str(counter)+".jpg"))
-                image_string = pygame.image.tostring(screen,"RGB")
-                pil_obj = Image.frombytes("RGB",(self.width,self.height),image_string)
-                pil_obj.save(os.path.join("/dev/shm/1/",str(counter)+".jpg"))
-
-
-            counter = counter + 1
-
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit(0)
-                if event.type == pygame.KEYDOWN:
-                    if event.key==K_w:
-                        keys[0]=True
-                    elif event.key==K_a:
-                        keys[1]=True
-                    elif event.key==K_s:
-                        keys[2]=True
-                    elif event.key==K_d:
-                        keys[3]=True
-                if event.type == pygame.KEYUP:
-                    if event.key==pygame.K_w:
-                        keys[0]=False
-                    elif event.key==pygame.K_a:
-                        keys[1]=False
-                    elif event.key==pygame.K_s:
-                        keys[2]=False
-                    elif event.key==pygame.K_d:
-                        keys[3]=False
-            if keys[0]:
-                playerpos[1] = max(0,playerpos[1]-self.obj_speed) 
-            elif keys[2]:
-                playerpos[1] = min(self.height-self.obj_h,playerpos[1]+self.obj_speed)
-            if keys[1]:
-                playerpos[0] = max(0,playerpos[0]-self.obj_speed)
-            elif keys[3]:
-                playerpos[0] = min(self.width-self.obj_w,playerpos[0]+self.obj_speed)
-                
+            
+               
 
 
 
 def main():
-    ge = GUI_engine(900,800)
+    ge = GUI_engine(1000,800)
     
 if __name__ == '__main__':
     main()
