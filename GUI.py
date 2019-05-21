@@ -31,7 +31,7 @@ class enemy:
                 global hit_counter
                 hit_counter = hit_counter + 1
                 print("Hit %d" %(hit_counter))
-                exit(0)
+                #exit(0)
             if pos_0 >= self.width or pos_0 <=0:
                 self.angle = - self.angle
             if pos_1 >=self.height or pos_1 <=0:
@@ -66,7 +66,7 @@ class GUI_engine:
         playerpos=[500,500]
         counter = 0
         enemy_lists = []
-        for i in range(15):
+        for i in range(5):
             ene = enemy(width,height,screen)
             enemy_lists.append(ene)
 
@@ -78,7 +78,7 @@ class GUI_engine:
                 enemy_lists[i].run_single(rect)
 
             pygame.display.flip()
-            time.sleep(0.002)
+            time.sleep(0.001)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
