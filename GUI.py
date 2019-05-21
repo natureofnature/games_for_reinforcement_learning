@@ -8,9 +8,11 @@ from PIL import Image
 import threading
 import io
 import random
+import numpy as np
+from Tensorflow_backend import NN as Network
 hit_counter = 0
 class enemy:
-    def __init__(self,width,height,screen):
+    def __init__(self,width,height,screen,speed=1):
         img = Image.open("pictures/star.png")
         img = img.convert("RGBA")
         img = img.resize((10,10))
@@ -21,7 +23,7 @@ class enemy:
         self.pos = (random.randint(0,width),random.randint(0,height))
         self.screen = screen
         self.angle = math.pi/3 
-        self.speed = 1 
+        self.speed = speed 
         self.width = width
         self.height = height
 
@@ -32,7 +34,7 @@ class enemy:
             if (pos_0 <= right and pos_0 >=left) and (pos_1<=bottom and pos_1>=top):
                 global hit_counter
                 hit_counter = hit_counter + 1
-                print("Hit %d" %(hit_counter))
+                #print("Hit %d" %(hit_counter))
                 #exit(0)
             if pos_0 >= self.width or pos_0 <=0:
                 self.angle = - self.angle
@@ -107,13 +109,28 @@ class Policy:
     def __init__(self,screen,width,height):
         self.screen = screen
         self.width,self.height = width,height
+        self.number_shots= 5
+        self.nn = Network(batchsize=1,channelsize=self.number_shots,width=self.width,height=self.height)
+        self.nn.create_network()
     def capture(self):
         counter = 0
+        image_lists=[]
         while True:
-            if counter % 5 == 0:
+            if counter % 3 == 0:
                 image_string = pygame.image.tostring(self.screen,"RGB")
                 pil_obj = Image.frombytes("RGB",(self.width,self.height),image_string)
-                pil_obj.save(os.path.join("/dev/shm/1",str(counter)+".jpg"))
+                pil_obj = pil_obj.convert('L')
+                img_array = np.array(pil_obj)
+                img_array = np.transpose(img_array,(1,0))
+                img_array = np.expand_dims(img_array,0)
+                image_lists.append(img_array)
+                if len(image_lists) > self.number_shots:
+                    del(image_lists[0])
+                if len(image_lists) == self.number_shots: 
+                    array = np.concatenate(image_lists,axis=0)
+                    array = np.expand_dims(array,0)
+                    act1,act2 = self.nn.forward(array)
+                    print(act1,act2)
                 counter = counter + 1
             counter = counter + 1
             #time.sleep(0.02)
@@ -132,13 +149,14 @@ class GUI_engine:
         screen = pygame.display.set_mode((width,height))
         counter = 0
         enemy_lists = []
-        for i in range(8):
-            ene = enemy(width,height,screen)
+        pol = Policy(screen,width,height)
+        pol.run()
+        for i in range(12):
+            speed = random.randint(1,2)
+            ene = enemy(width,height,screen,speed)
             enemy_lists.append(ene)
         player = player_agent(screen,width,height)
         rect = [0,0,0,0]
-        pol = Policy(screen,width,height)
-        pol.run()
 
         while 1:
             screen.fill(0)
