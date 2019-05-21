@@ -10,6 +10,7 @@ import io
 import random
 import numpy as np
 from Tensorflow_backend import NN as Network
+import queue
 hit_counter = 0
 class enemy:
     def __init__(self,width,height,screen,speed=1):
@@ -66,6 +67,9 @@ class player_agent:
         self.obj= pygame.image.fromstring(data,size,mode)
         self.keys = [False, False, False, False]
         self.playerpos=[int(self.width/2),int(self.height/2)]
+        self.policy_queue = queue.Queue(1)
+        pol = Policy(screen,self.width,self.height,self.policy_queue)
+        pol.run()
 
     def run_single(self,rect):
         self.screen.blit(self.obj,(self.playerpos[0],self.playerpos[1]))
@@ -73,6 +77,15 @@ class player_agent:
         rect[1] = self.playerpos[0]
         rect[2] = self.playerpos[1]+self.obj_h
         rect[3] = self.playerpos[0]+self.obj_w
+        direction, ispress = self.policy_queue.get()
+        dirc = np.argmax(direction[0])
+        press = np.argmax(ispress[0])
+        print(dirc,press)
+       
+        
+
+        '''
+        #buttons
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -103,13 +116,15 @@ class player_agent:
             self.playerpos[0] = max(0,self.playerpos[0]-self.obj_speed)
         elif self.keys[3]:
             self.playerpos[0] = min(self.width-self.obj_w,self.playerpos[0]+self.obj_speed)
+        '''
              
 
 class Policy:
-    def __init__(self,screen,width,height):
+    def __init__(self,screen,width,height,policy_queue):
         self.screen = screen
         self.width,self.height = width,height
         self.number_shots= 5
+        self.policy_queue = policy_queue
         self.nn = Network(batchsize=1,channelsize=self.number_shots,width=self.width,height=self.height)
         self.nn.create_network()
     def capture(self):
@@ -130,7 +145,8 @@ class Policy:
                     array = np.concatenate(image_lists,axis=0)
                     array = np.expand_dims(array,0)
                     act1,act2 = self.nn.forward(array)
-                    print(act1,act2)
+                    #print(act1,act2)
+                    self.policy_queue.put((act1,act2))
                 counter = counter + 1
             counter = counter + 1
             #time.sleep(0.02)
@@ -149,8 +165,6 @@ class GUI_engine:
         screen = pygame.display.set_mode((width,height))
         counter = 0
         enemy_lists = []
-        pol = Policy(screen,width,height)
-        pol.run()
         for i in range(12):
             speed = random.randint(1,2)
             ene = enemy(width,height,screen,speed)
