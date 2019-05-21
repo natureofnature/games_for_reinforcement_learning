@@ -1,10 +1,12 @@
 import pygame
+import os
 import time
 import math
 import sys
 from pygame.locals import * 
 from PIL import Image
 import threading
+import io
 import random
 hit_counter = 0
 class enemy:
@@ -78,7 +80,16 @@ class GUI_engine:
                 enemy_lists[i].run_single(rect)
 
             pygame.display.flip()
-            time.sleep(0.001)
+            if counter % 5 == 0:
+                #pygame.image.save(screen, os.path.join("/dev/shm/1/",str(counter)+".jpg"))
+                image_string = pygame.image.tostring(screen,"RGB")
+                pil_obj = Image.frombytes("RGB",(self.width,self.height),image_string)
+                pil_obj.save(os.path.join("/dev/shm/1/",str(counter)+".jpg"))
+
+
+            counter = counter + 1
+
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
