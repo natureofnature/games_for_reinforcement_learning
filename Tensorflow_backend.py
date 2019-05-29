@@ -19,18 +19,13 @@ class NN:
         net = tf.layers.conv2d(net,32,3,padding='same',activation=tf.nn.relu,data_format='channels_first')
         net = tf.reshape(net,shape=[self.batchsize,-1])
         net = tf.layers.dense(net,32,activation=tf.nn.relu)
-        net_1= tf.layers.dense(net,32,activation=tf.nn.relu) 
-        net_1= tf.layers.dense(net_1,4,activation=tf.nn.relu) #up,down,left,right
-        net_2= tf.layers.dense(net,32,activation=tf.nn.relu) 
-        net_2= tf.layers.dense(net_2,2,activation=tf.nn.relu) #press/release
-        act1 = tf.nn.softmax(net_1)
-        act2 = tf.nn.softmax(net_2)
-
-        self.act1 = act1
-        self.act2 = act2
+        net= tf.layers.dense(net,32,activation=tf.nn.relu) 
+        net= tf.layers.dense(net,5,activation=tf.nn.relu) #queue value of no move,up,down,left,right
+        act = tf.nn.softmax(net)
+        self.act = act
         self.sess.run(tf.initializers.global_variables())
 
 
     def forward(self,np_images):
-        act1,act2 = self.sess.run([self.act1,self.act2],feed_dict={self.inputs:np_images})
-        return act1,act2
+        act = self.sess.run(self.act,feed_dict={self.inputs:np_images})
+        return act

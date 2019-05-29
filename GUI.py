@@ -77,20 +77,19 @@ class player_agent:
         rect[1] = self.playerpos[0]
         rect[2] = self.playerpos[1]+self.obj_h
         rect[3] = self.playerpos[0]+self.obj_w
-        direction, ispress = self.policy_queue.get()
-        dirc = np.argmax(direction[0])
-        press = np.argmax(ispress[0])
+        acts = self.policy_queue.get()
+        act = np.argmax(acts)
         #print(dirc,press)
-        if press == 0:
-            if dirc == 0:
-                self.playerpos[1] = max(0,self.playerpos[1]-self.obj_speed) 
-            elif dirc == 1:
-                self.playerpos[1] = max(0,self.playerpos[1]-self.obj_speed) 
-            elif dirc == 2:
-                self.playerpos[0] = max(0,self.playerpos[0]-self.obj_speed)
-            elif dirc == 3:
-                self.playerpos[0] = min(self.width-self.obj_w,self.playerpos[0]+self.obj_speed)
+        if act == 1:
+            self.playerpos[1] = max(0,self.playerpos[1]-self.obj_speed) 
+        elif act == 2:
+            self.playerpos[1] = max(0,self.playerpos[1]-self.obj_speed) 
+        elif act == 3:
+            self.playerpos[0] = max(0,self.playerpos[0]-self.obj_speed)
+        elif act == 4:
+            self.playerpos[0] = min(self.width-self.obj_w,self.playerpos[0]+self.obj_speed)
        
+        #############uncomment if you want to control it with keyboards###########################
         ''' 
         #buttons
         for event in pygame.event.get():
@@ -124,6 +123,7 @@ class player_agent:
         elif self.keys[3]:
             self.playerpos[0] = min(self.width-self.obj_w,self.playerpos[0]+self.obj_speed)
         '''
+        ##########################################################################################
              
 
 class Policy:
@@ -152,9 +152,9 @@ class Policy:
             if len(image_lists) == self.number_shots: 
                 array = np.concatenate(image_lists,axis=0)
                 array = np.expand_dims(array,0)
-                act1,act2 = self.nn.forward(array)
+                act = self.nn.forward(array)
                 #print(act1,act2)
-                self.policy_queue.put((act1,act2))
+                self.policy_queue.put(act)
                 #self.policy_queue.put((act1,act2))
                 #self.policy_queue.put((act1,act2))
             counter = counter + 1
@@ -173,7 +173,7 @@ class GUI_engine:
         screen = pygame.display.set_mode((width,height))
         counter = 0
         enemy_lists = []
-        for i in range(3):
+        for i in range(12):
             speed = random.randint(16,32)
             ene = enemy(width,height,screen,speed)
             enemy_lists.append(ene)
