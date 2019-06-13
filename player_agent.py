@@ -25,7 +25,6 @@ class Policy:
         self.number_shots= number_images_to_observe 
         self.policy_queue = policy_queue
         self.nn = Network(batchsize=1,channelsize=self.number_shots,width=self.width,height=self.height)
-        self.nn.create_network()
         self.rewarwd = 0
         self.screen_shot_index = 0
         self.image_lists = [] #sequential images
@@ -77,9 +76,14 @@ class Policy:
             #self.policy_queue.put((act1,act2))
             print(act)
         return act
+    def img_index_to_np(self,image_list):
+        #to do
+
+
     
     def training(self):
         fetch_images_pre,fetch_images_aft,fetched_reward, fetched_action = self.replay_mem.fetch_transactions(1)
+
 
 
 
