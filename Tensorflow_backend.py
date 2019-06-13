@@ -2,6 +2,8 @@ import tensorflow as tf
 class NN:
     def __init__(self,batchsize,channelsize,width,height):
         self.sess = tf.Session()
+        msg = tf.constant("V1.0")
+        self.sess.run(msg)
         self.batchsize = batchsize
         self.channelsize = channelsize
         self.width = width
