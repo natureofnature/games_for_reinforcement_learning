@@ -28,6 +28,7 @@ class Policy:
         self.rewarwd = 0
         self.screen_shot_index = 0
         self.image_lists = [] #sequential images
+        self.image_history = [] #if file is larger, relace it with files
 
     def set_reward(self,reward):
         self.reward = reward
@@ -48,16 +49,19 @@ class Policy:
         img_array = np.transpose(img_array,(1,0))
         img_array = np.expand_dims(img_array,0)
         self.image_lists.append(img_array)
+        self.image_history.append(img_array)
 
         if self.screen_shot_index %1 == 0:
-            pil_obj.save(os.path.join("/dev/shm/1",str(self.screen_shot_index)+".jpg"))
+            pass
+            #saving to disk
+            #pil_obj.save(os.path.join("/dev/shm/1",str(self.screen_shot_index)+".jpg"))
+        self.screen_shot_index+=1 
         if len(self.replay_mem.memory_img) < self.number_shots:
             self.replay_mem.add_to_memory(self.screen_shot_index,0,0)
             return []
         else:
             del(self.image_lists[0])
             self.replay_mem.add_to_memory(self.screen_shot_index,None,None)
-        self.screen_shot_index+=1 
 
         #random explore
         sampled = random.randint(0,100)
@@ -70,19 +74,44 @@ class Policy:
             array = np.concatenate(self.image_lists,axis=0)
             array = np.expand_dims(array,0)
             act = self.nn.forward(array)
-            #print(act1,act2)
             self.replay_mem.add_to_memory(None,None,act)
             #self.policy_queue.put((act1,act2))
             #self.policy_queue.put((act1,act2))
-            print(act)
         return act
     def img_index_to_np(self,image_list):
         #to do
+        array = np.concatenate(image_list,axis = 0)
+        array = np.expand_dims(array,0)
+        return array
 
 
     
     def training(self):
         fetch_images_pre,fetch_images_aft,fetched_reward, fetched_action = self.replay_mem.fetch_transactions(1)
+        image_pre = []
+        image_aft = []
+        for i in fetch_images_pre:
+            image_slice = np.concatenate(self.image_history[i[0]:i[-1]+1],axis=0)
+            if len(image_slice) != self.number_shots:
+                print("Return")
+                return
+            
+            image_pre.append(image_slice)
+        for i in fetch_images_aft:
+            image_slice = np.concatenate(self.image_history[i[0]:i[-1]+1],axis=0)
+            if len(image_slice) != self.number_shots:
+                print("Return")
+                return
+            image_aft.append(image_slice)
+        reward = np.array(fetched_reward)
+        action = np.array(fetched_action,dtype=np.int32)
+        #action = np.argmax(action,axis=1)
+        print(action)
+        image_pre = self.img_index_to_np(image_pre)
+        image_aft = self.img_index_to_np(image_aft)
+        gamma = 0.1
+        self.nn.cal_loss(image_pre,image_aft,reward,action,gamma)
+
 
 
 

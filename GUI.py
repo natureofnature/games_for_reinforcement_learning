@@ -23,12 +23,14 @@ class replay_memory:
         self.memory_reward = []
 
     def add_to_memory(self,before_action_img_index,reward,action):
+
         if before_action_img_index is not None:
             self.memory_img.append(before_action_img_index)
         if reward is not None:
-            self.memory_action.append(action)
-        if action is not None:
             self.memory_reward.append(reward)
+        if action is not None:
+            self.memory_action.append(action)
+        
 
     def mem_checker(self):
         global number_images_to_observe
@@ -44,7 +46,7 @@ class replay_memory:
         fetched_action = []
         for i in range(batch_size):
             #print(len(self.memory_img)-number_images_to_observe)
-            start_index_pre = random.randint(0,len(self.memory_img)-number_images_to_observe) #start index of previous images
+            start_index_pre = random.randint(0,len(self.memory_img)-number_images_to_observe-1) #start index of previous images
             fetched_p = self.memory_img[start_index_pre:start_index_pre+number_images_to_observe]
             fetched_a = self.memory_img[start_index_pre+1:start_index_pre+number_images_to_observe+1] #next window to calculate Qt+1
             reward = self.memory_reward[start_index_pre+number_images_to_observe-1]
@@ -91,7 +93,7 @@ class GUI_engine:
             for i in range(len(enemy_lists)):
                 enemy_lists[i].run_single(rect)
             n_act = player.run_single(rect)
-            if n_act > 0:
+            if n_act > 0: #enough images to observe
                 r = reward.getReward()
                 player.set_reward(r)
                 player.training()
