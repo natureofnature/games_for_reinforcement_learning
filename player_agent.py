@@ -24,12 +24,13 @@ class Policy:
         global number_images_to_observe
         self.number_shots= number_images_to_observe 
         self.policy_queue = policy_queue
-        self.batch_size = 5
-        self.nn = Network(batchsize=1,channelsize=self.number_shots,width=self.width,height=self.height)
+        self.batch_size = 20 
+        self.nn = Network(batchsize=self.batch_size,channelsize=self.number_shots,width=self.width,height=self.height)
         self.rewarwd = 0
         self.screen_shot_index = 0
         self.image_lists = [] #sequential images
         self.image_history = [] #if file is larger, relace it with files
+        self.training_counter = 0
 
     def set_reward(self,reward):
         self.reward = reward
@@ -68,6 +69,13 @@ class Policy:
         #random explore
         sampled = random.randint(0,100)
         act = [] 
+        if self.training_counter < 10000:
+            self.epsilon = 0.3
+        else:
+            self.epsilon = 0.05
+        self.training_counter+=1
+        if self.training_counter % 1000 == 0:
+            print("Trained %d iterations \n" %(self.training_counter))
         if sampled/100 <= self.epsilon:
             act = np.zeros(5)
             act[random.randint(0,4)] = 1
@@ -75,7 +83,7 @@ class Policy:
         else:
             array = np.concatenate(self.image_lists,axis=0)
             array = np.expand_dims(array,0)
-            act = self.nn.forward(array)
+            act = self.nn.forward(array)[0]
             #while acting/playing, batchsize = 1
             self.replay_mem.add_to_memory(None,None,act[0])
             #self.policy_queue.put((act1,act2))
@@ -83,14 +91,15 @@ class Policy:
         return act
     def img_index_to_np(self,image_list):
         #to do
-        array = np.concatenate(image_list,axis = 0)
-        array = np.expand_dims(array,0)
+        #array = np.concatenate(image_list,axis = 0)
+        #array = np.expand_dims(array,0)
+        array = np.vstack(image_list)
         return array
 
 
     
     def training(self):
-        fetch_images_pre,fetch_images_aft,fetched_reward, fetched_action = self.replay_mem.fetch_transactions(1)
+        fetch_images_pre,fetch_images_aft,fetched_reward, fetched_action = self.replay_mem.fetch_transactions(self.batch_size)
         if len(fetch_images_pre) == 0:
             return
         image_pre = []
@@ -100,13 +109,14 @@ class Policy:
             if len(image_slice) != self.number_shots:
                 print("Return")
                 return
-            
+            image_slice = np.expand_dims(image_slice,0) 
             image_pre.append(image_slice)
         for i in fetch_images_aft:
             image_slice = np.concatenate(self.image_history[i[0]:i[-1]+1],axis=0)
             if len(image_slice) != self.number_shots:
                 print("Return")
                 return
+            image_slice = np.expand_dims(image_slice,0) 
             image_aft.append(image_slice)
         reward = np.array(fetched_reward)
         reward = np.expand_dims(reward,-1)
@@ -128,7 +138,7 @@ class player_agent:
         self.replay_mem = rpl_mem
         self.screen = screen
         self.width,self.height = env_w,env_h 
-        self.obj_w, self.obj_h = (100,50)
+        self.obj_w, self.obj_h = (50,25)
         self.obj_speed=20
         img = Image.open("pictures/car.png").convert("RGBA").resize((self.obj_w,self.obj_h))
         mode = img.mode

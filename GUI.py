@@ -72,7 +72,7 @@ class Rewards:
         for ene in self.enemies:
             isCon = ene.isConflicted(self.player_agent_rect)
             if isCon is True:
-                return -100000
+                return -200 
         return 1
             
 
@@ -84,8 +84,8 @@ class GUI_engine:
         rpl_mem = replay_memory()
         counter = 0
         enemy_lists = []
-        for i in range(30):
-            speed = random.randint(16,32)
+        for i in range(12):
+            speed = random.randint(10,32)
             ene = enemy(width,height,screen,speed)
             enemy_lists.append(ene)
         player = player_agent(screen,width,height,rpl_mem)
@@ -108,7 +108,7 @@ class GUI_engine:
 
 
 def main():
-    ge = GUI_engine(1000,800)
+    ge = GUI_engine(500,400)
     
 if __name__ == '__main__':
     main()
