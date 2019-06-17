@@ -24,6 +24,7 @@ class Policy:
         global number_images_to_observe
         self.number_shots= number_images_to_observe 
         self.policy_queue = policy_queue
+        self.batch_size = 5
         self.nn = Network(batchsize=1,channelsize=self.number_shots,width=self.width,height=self.height)
         self.rewarwd = 0
         self.screen_shot_index = 0
@@ -41,6 +42,7 @@ class Policy:
 
 
     def act(self): #record image,action in Xt
+        #while acting/playing, batchsize = 1
         #screen shots
         image_string = pygame.image.tostring(self.screen,"RGB")
         pil_obj = Image.frombytes("RGB",(self.width,self.height),image_string)
@@ -57,7 +59,7 @@ class Policy:
             #pil_obj.save(os.path.join("/dev/shm/1",str(self.screen_shot_index)+".jpg"))
         self.screen_shot_index+=1 
         if len(self.replay_mem.memory_img) < self.number_shots:
-            self.replay_mem.add_to_memory(self.screen_shot_index,0,0)
+            self.replay_mem.add_to_memory(self.screen_shot_index,0,[1,0,0,0,0]) #do not move 
             return []
         else:
             del(self.image_lists[0])
@@ -74,7 +76,8 @@ class Policy:
             array = np.concatenate(self.image_lists,axis=0)
             array = np.expand_dims(array,0)
             act = self.nn.forward(array)
-            self.replay_mem.add_to_memory(None,None,act)
+            #while acting/playing, batchsize = 1
+            self.replay_mem.add_to_memory(None,None,act[0])
             #self.policy_queue.put((act1,act2))
             #self.policy_queue.put((act1,act2))
         return act
@@ -88,6 +91,8 @@ class Policy:
     
     def training(self):
         fetch_images_pre,fetch_images_aft,fetched_reward, fetched_action = self.replay_mem.fetch_transactions(1)
+        if len(fetch_images_pre) == 0:
+            return
         image_pre = []
         image_aft = []
         for i in fetch_images_pre:
@@ -104,9 +109,9 @@ class Policy:
                 return
             image_aft.append(image_slice)
         reward = np.array(fetched_reward)
-        action = np.array(fetched_action,dtype=np.int32)
-        #action = np.argmax(action,axis=1)
-        print(action)
+        reward = np.expand_dims(reward,-1)
+        action = np.array(fetched_action,dtype=np.float32)
+        action = np.expand_dims(action,-1)
         image_pre = self.img_index_to_np(image_pre)
         image_aft = self.img_index_to_np(image_aft)
         gamma = 0.1

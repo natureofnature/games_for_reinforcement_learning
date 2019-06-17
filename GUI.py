@@ -29,16 +29,20 @@ class replay_memory:
         if reward is not None:
             self.memory_reward.append(reward)
         if action is not None:
-            self.memory_action.append(action)
+            self.memory_action.append(np.argmax(action))
         
 
-    def mem_checker(self):
+    def mem_enough_history(self):
         global number_images_to_observe
-        if len(self.memory_img) < number_images_to_observe:
+        #at least num_img_observe + 1 images are required
+        if len(self.memory_img) <= number_images_to_observe:
             return False
         return True
 
     def fetch_transactions(self,batch_size):
+        if self.mem_enough_history() is False: #no enough images for training
+            return [],[],[],[]
+       
         global number_images_to_observe
         fetched_images_previous  = []
         fetched_images_after = []
@@ -80,7 +84,7 @@ class GUI_engine:
         rpl_mem = replay_memory()
         counter = 0
         enemy_lists = []
-        for i in range(12):
+        for i in range(30):
             speed = random.randint(16,32)
             ene = enemy(width,height,screen,speed)
             enemy_lists.append(ene)
