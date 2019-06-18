@@ -69,11 +69,14 @@ class Rewards:
         self.enemies = enemies
         self.player_agent_rect = player_agent_rect
     def getReward(self):
+        r = 100
         for ene in self.enemies:
             isCon = ene.isConflicted(self.player_agent_rect)
             if isCon is True:
-                return -200 
-        return 1
+                r = min(r,-1)
+        r = min(r,0.001)
+        print("[Step core: %d]\n" %(r))
+        return 0.001 
             
 
 
@@ -84,8 +87,8 @@ class GUI_engine:
         rpl_mem = replay_memory()
         counter = 0
         enemy_lists = []
-        for i in range(12):
-            speed = random.randint(10,32)
+        for i in range(5):
+            speed = random.randint(4,10)
             ene = enemy(width,height,screen,speed)
             enemy_lists.append(ene)
         player = player_agent(screen,width,height,rpl_mem)
@@ -97,8 +100,8 @@ class GUI_engine:
             for i in range(len(enemy_lists)):
                 enemy_lists[i].run_single(rect)
             n_act = player.run_single(rect)
+            r = reward.getReward()
             if n_act > 0: #enough images to observe
-                r = reward.getReward()
                 player.set_reward(r)
                 player.training()
             pygame.display.flip()
@@ -108,7 +111,7 @@ class GUI_engine:
 
 
 def main():
-    ge = GUI_engine(500,400)
+    ge = GUI_engine(300,200)
     
 if __name__ == '__main__':
     main()

@@ -79,7 +79,8 @@ class NN:
         net = tf.layers.conv2d(net,32,3,padding='same',activation=tf.nn.relu,data_format='channels_first',trainable = isTraining)
         net = tf.layers.conv2d(net,32,5,strides=(5,5),padding='same',activation=tf.nn.relu,data_format='channels_first',trainable = isTraining)
         net = tf.layers.conv2d(net,32,3,padding='same',activation=tf.nn.relu,data_format='channels_first',trainable = isTraining)
-        net = tf.reshape(net,shape=[-1,20*16*32])
+        #print(net.shape)
+        net = tf.reshape(net,shape=[-1,12*8*32])
         net = tf.layers.dense(net,32,activation=tf.nn.relu,trainable = isTraining)
         net= tf.layers.dense(net,32,activation=tf.nn.relu,trainable = isTraining) 
         net= tf.layers.dense(net,5,activation=tf.nn.relu,trainable = isTraining) #queue value of no move,up,down,left,right

@@ -1,4 +1,5 @@
 import pygame
+import math
 import os
 import time
 import math
@@ -24,17 +25,19 @@ class Policy:
         global number_images_to_observe
         self.number_shots= number_images_to_observe 
         self.policy_queue = policy_queue
-        self.batch_size = 20 
+        self.batch_size = 30 
         self.nn = Network(batchsize=self.batch_size,channelsize=self.number_shots,width=self.width,height=self.height)
         self.rewarwd = 0
         self.screen_shot_index = 0
         self.image_lists = [] #sequential images
         self.image_history = [] #if file is larger, relace it with files
         self.training_counter = 0
+        self.training_iter = 0
+        self.position_score = 0
 
     def set_reward(self,reward):
         self.reward = reward
-        self.replay_mem.add_to_memory(None,self.reward,None)
+        self.replay_mem.add_to_memory(None,self.reward+self.position_score,None)
 
         #screen shots
         #image_string = pygame.image.tostring(self.screen,"RGB")
@@ -42,9 +45,10 @@ class Policy:
 
 
 
-    def act(self): #record image,action in Xt
+    def act(self,position_score): #record image,action in Xt
         #while acting/playing, batchsize = 1
         #screen shots
+        self.position_score = position_score
         image_string = pygame.image.tostring(self.screen,"RGB")
         pil_obj = Image.frombytes("RGB",(self.width,self.height),image_string)
         pil_obj = pil_obj.convert('L')
@@ -57,7 +61,7 @@ class Policy:
         if self.screen_shot_index %1 == 0:
             pass
             #saving to disk
-            #pil_obj.save(os.path.join("/dev/shm/1",str(self.screen_shot_index)+".jpg"))
+            pil_obj.save(os.path.join("/dev/shm/1",str(self.screen_shot_index)+".jpg"))
         self.screen_shot_index+=1 
         if len(self.replay_mem.memory_img) < self.number_shots:
             self.replay_mem.add_to_memory(self.screen_shot_index,0,[1,0,0,0,0]) #do not move 
@@ -69,10 +73,13 @@ class Policy:
         #random explore
         sampled = random.randint(0,100)
         act = [] 
-        if self.training_counter < 10000:
-            self.epsilon = 0.3
+        if self.training_counter < 2000:
+            self.epsilon = 1 
+        elif self.training_counter>= 2000 and self.training_counter <=10000:
+            self.epsilon = 0.3 
         else:
             self.epsilon = 0.05
+          
         self.training_counter+=1
         if self.training_counter % 1000 == 0:
             print("Trained %d iterations \n" %(self.training_counter))
@@ -88,6 +95,7 @@ class Policy:
             self.replay_mem.add_to_memory(None,None,act[0])
             #self.policy_queue.put((act1,act2))
             #self.policy_queue.put((act1,act2))
+        #return [1,0,0,0,0] 
         return act
     def img_index_to_np(self,image_list):
         #to do
@@ -118,13 +126,15 @@ class Policy:
                 return
             image_slice = np.expand_dims(image_slice,0) 
             image_aft.append(image_slice)
+        self.training_iter += 1
+        print("Training counter: %d \n" %(self.training_iter))
         reward = np.array(fetched_reward)
         reward = np.expand_dims(reward,-1)
         action = np.array(fetched_action,dtype=np.float32)
         action = np.expand_dims(action,-1)
         image_pre = self.img_index_to_np(image_pre)
         image_aft = self.img_index_to_np(image_aft)
-        gamma = 0.1
+        gamma = 0.99
         self.nn.cal_loss(image_pre,image_aft,reward,action,gamma)
 
 
@@ -146,7 +156,7 @@ class player_agent:
         data=img.tobytes()
         self.obj= pygame.image.fromstring(data,size,mode)
         self.keys = [False, False, False, False]
-        self.playerpos=[int(self.width/2),int(self.height/2)]
+        self.playerpos=[int(self.width/10),int(self.height/3)]
         self.policy_queue = queue.Queue(1)
         self.reward = 0
         #explore 
@@ -161,7 +171,11 @@ class player_agent:
         rect[1] = self.playerpos[0]
         rect[2] = self.playerpos[1]+self.obj_h
         rect[3] = self.playerpos[0]+self.obj_w
-        acts = self.pol.act()
+        center_x = (rect[1]+rect[3])/2/self.width
+        center_y = (rect[0]+rect[2])/2/self.height
+        pos_score = 0 - 0.1*math.sqrt((center_x-0.5)*(center_x-0.5)+(center_y-0.5)*(center_y-0.5)) 
+        print(center_x,center_y,pos_score)
+        acts = self.pol.act(pos_score)
         if len(acts) == 0:
             return 0
         act = np.argmax(acts)
